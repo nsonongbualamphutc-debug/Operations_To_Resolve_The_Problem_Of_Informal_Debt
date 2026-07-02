@@ -84,6 +84,18 @@ tr:hover td{background:rgba(255,255,255,.03)}
 .fgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .fgrid .full{grid-column:1/-1}
 .fld label{display:block;font-size:.76rem;color:var(--muted);margin-bottom:5px;font-family:'Kanit'}
+.req{color:var(--red);font-weight:700}
+/* view detail */
+.vgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.vitem{background:var(--navy3);border:1px solid var(--line);border-radius:12px;padding:10px 14px}
+.vitem.full{grid-column:1/-1}
+.vitem .vl{font-family:'Kanit';font-size:.72rem;color:var(--muted);margin-bottom:3px}
+.vitem .vv{font-size:.9rem;word-break:break-word;white-space:pre-wrap}
+.vitem .vv.big{font-family:'Kanit';font-size:1.15rem;font-weight:700;color:var(--gold2)}
+.vitem .vv.empty{color:var(--muted);font-style:italic}
+td.clickable{cursor:pointer}
+td.clickable:hover{color:var(--gold2);text-decoration:underline dotted}
+@media(max-width:640px){.vgrid{grid-template-columns:1fr}}
 .fld input,.fld select,.fld textarea{width:100%;font-family:'Sarabun';font-size:.88rem;background:var(--navy3);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:9px 12px;outline:none}
 .fld input:focus,.fld select:focus,.fld textarea:focus{border-color:var(--gold)}
 .fld textarea{resize:vertical;min-height:60px}
@@ -167,8 +179,8 @@ tr:hover td{background:rgba(255,255,255,.03)}
   <div class="modal">
     <h2 id="mTitle">เพิ่มเรื่องร้องเรียนใหม่</h2>
     <div class="fgrid">
-      <div class="fld"><label>วันที่รับเรื่อง *</label><input type="date" id="f_date"></div>
-      <div class="fld"><label>อำเภอ *</label><select id="f_district"></select></div>
+      <div class="fld"><label>วันที่รับเรื่อง <span class="req">*</span></label><input type="date" id="f_date"></div>
+      <div class="fld"><label>อำเภอ <span class="req">*</span></label><select id="f_district"></select></div>
       <div class="fld"><label>ช่องทางการรับเรื่อง</label><select id="f_channel">
         <option>ศูนย์ดำรงธรรม</option><option>ที่ว่าการอำเภอ</option><option>ตลาดนัดแก้หนี้</option>
         <option>สายด่วน 1567</option><option>ลงทะเบียนออนไลน์</option><option>สถานีตำรวจ</option><option>อื่นๆ</option>
@@ -180,11 +192,11 @@ tr:hover td{background:rgba(255,255,255,.03)}
       </select></div>
       <div class="fld full"><label>รายละเอียดเรื่องร้องเรียน (ข้อมูลภายใน — ไม่แสดงหน้าสาธารณะ)</label>
         <textarea id="f_detail" placeholder="ระบุพฤติการณ์ พื้นที่ ฯลฯ (หลีกเลี่ยงการระบุชื่อ-สกุลจริงหากไม่จำเป็น)"></textarea></div>
-      <div class="fld"><label>มูลค่าหนี้สิน (บาท) *</label><input type="number" id="f_debt" min="0" step="any"></div>
-      <div class="fld"><label>ยอดหนี้หลังไกล่เกลี่ยสำเร็จ (บาท)</label><input type="number" id="f_after" min="0" step="any"></div>
+      <div class="fld"><label>มูลค่าหนี้สิน (บาท) <span class="req">*</span></label><input type="number" id="f_debt" min="0" step="any" placeholder="กรอกเป็นตัวเลข เช่น 150000"></div>
+      <div class="fld"><label>ยอดหนี้หลังไกล่เกลี่ยสำเร็จ (บาท) <small style="color:#93a0c4;font-weight:400">— ถ้าไม่ทราบให้ใส่ 0</small></label><input type="number" id="f_after" min="0" step="any" placeholder="0"></div>
       <div class="fld"><label>จำนวนเจ้าหนี้ (ราย)</label><input type="number" id="f_cr" min="0" value="1"></div>
       <div class="fld"><label>จำนวนลูกหนี้ (ราย)</label><input type="number" id="f_db" min="0" value="1"></div>
-      <div class="fld"><label>สถานะการดำเนินงาน *</label><select id="f_status" onchange="toggleRes()">
+      <div class="fld"><label>สถานะการดำเนินงาน <span class="req">*</span></label><select id="f_status" onchange="toggleRes()">
         <option>อยู่ระหว่างดำเนินการ</option><option>อยู่ระหว่างไกล่เกลี่ย</option><option>ยุติเรื่องแล้ว</option>
       </select></div>
       <div class="fld"><label>ผลการยุติเรื่อง</label><select id="f_result">
@@ -204,6 +216,18 @@ tr:hover td{background:rgba(255,255,255,.03)}
 </div>
 
 <div class="toast" id="toast"></div>
+
+<!-- VIEW DETAIL MODAL -->
+<div class="modal-bg" id="viewBg">
+  <div class="modal" style="max-width:680px">
+    <h2 style="display:flex;align-items:center;gap:10px">📄 รายละเอียดเรื่องร้องเรียน <span class="st" id="v_status" style="margin-left:auto"></span></h2>
+    <div class="vgrid" id="viewBody"></div>
+    <div class="modal-btns">
+      <button class="mbtn cancel" onclick="closeView()">ปิด</button>
+      <button class="mbtn save" id="viewEditBtn">✏️ แก้ไขข้อมูลนี้</button>
+    </div>
+  </div>
+</div>
 
 <script>
 /* =============== CONFIG =============== */
@@ -299,13 +323,15 @@ function renderTable(){
   if(!F.length){tb.innerHTML='<tr><td colspan="12" class="empty">ไม่พบข้อมูล — กด "เพิ่มเรื่องใหม่" หรือ "นำเข้า Excel" เพื่อเริ่มต้น</td></tr>';return;}
   tb.innerHTML=F.map(r=>`<tr>
     <td>${thDate(r.received_date)}</td><td>${esc(r.district)}</td><td>${esc(r.channel)||'-'}</td>
-    <td>${esc(r.behavior)||'-'}</td><td>${esc(r.detail)||'-'}</td>
+    <td>${esc(r.behavior)||'-'}</td>
+    <td class="clickable" onclick="openView('${r.id}')" title="คลิกเพื่อดูรายละเอียดเต็ม">${esc(r.detail)||'<span style=color:#93a0c4>(คลิกดูรายละเอียด)</span>'}</td>
     <td style="text-align:right">${fmt(r.debt_amount)}</td>
     <td style="text-align:center">${r.creditors||'-'}</td><td style="text-align:center">${r.debtors||'-'}</td>
     <td><span class="st ${stCls(r.status)}">${esc(r.status)||'-'}</span></td>
     <td>${esc(r.resolution_result)||'-'}</td>
     <td style="text-align:right">${+r.debt_after?fmt(r.debt_after):'-'}</td>
     <td style="white-space:nowrap">
+      <button class="rowbtn" onclick="openView('${r.id}')">👁️ ดู</button>
       <button class="rowbtn" onclick="openForm('${r.id}')">✏️ แก้ไข</button>
       <button class="rowbtn del" onclick="delRec('${r.id}')">🗑️</button>
     </td></tr>`).join('');
@@ -335,7 +361,40 @@ function openForm(id){
 }
 function setSel(id,v){const s=document.getElementById(id);if(v&&[...s.options].some(o=>o.value===v||o.text===v))s.value=v;else s.selectedIndex=0;}
 function closeForm(){document.getElementById('modalBg').style.display='none';}
-document.getElementById('modalBg').addEventListener('click',e=>{if(e.target.id==='modalBg')closeForm();});
+/* คลิกพื้นหลังไม่ปิดฟอร์ม — กันข้อมูลที่พิมพ์อยู่หาย ปิดได้จากปุ่ม "ยกเลิก" เท่านั้น */
+
+/* =============== VIEW DETAIL =============== */
+function openView(id){
+  const r=ROWS.find(x=>String(x.id)===String(id));
+  if(!r)return;
+  const reduced=Math.max((+r.debt_amount||0)-(+r.debt_after||0),0);
+  const V=(l,v,cls='')=>`<div class="vitem"><div class="vl">${l}</div><div class="vv ${cls} ${v?'':'empty'}">${v||'ไม่ได้ระบุ'}</div></div>`;
+  const VF=(l,v)=>`<div class="vitem full"><div class="vl">${l}</div><div class="vv ${v?'':'empty'}">${esc(v)||'ไม่ได้ระบุ'}</div></div>`;
+  document.getElementById('viewBody').innerHTML=
+    V('วันที่รับเรื่อง',thDate(r.received_date))+
+    V('อำเภอ',esc(r.district))+
+    V('ช่องทางการรับเรื่อง',esc(r.channel))+
+    V('พฤติการณ์ / ประเภทเรื่อง',esc(r.behavior))+
+    VF('รายละเอียดเรื่องร้องเรียน',r.detail)+
+    V('มูลค่าหนี้สิน (บาท)',fmt(r.debt_amount),'big')+
+    V('ยอดหนี้หลังไกล่เกลี่ย (บาท)',(+r.debt_after?fmt(r.debt_after):'0'),'big')+
+    V('จำนวนเจ้าหนี้ (ราย)',r.creditors||'0')+
+    V('จำนวนลูกหนี้ (ราย)',r.debtors||'0')+
+    V('ผลการยุติเรื่อง',esc(r.resolution_result))+
+    V('มูลหนี้ที่ลดลง (บาท)',String(r.status).includes('ยุติ')&&+r.debt_after>=0&&reduced>0?fmt(reduced):'-')+
+    VF('รายละเอียดการดำเนินการ',r.action_detail)+
+    VF('รายละเอียดการยุติเรื่อง / ผลการไกล่เกลี่ย',r.resolution_detail)+
+    VF('หมายเหตุ',r.note)+
+    V('บันทึกโดย',esc(r.updated_by))+
+    V('อัปเดตล่าสุด',esc(r.updated_at));
+  const st=document.getElementById('v_status');
+  st.textContent=r.status||'-';st.className='st '+stCls(r.status);
+  document.getElementById('viewEditBtn').onclick=()=>{closeView();openForm(r.id);};
+  document.getElementById('viewBg').style.display='flex';
+}
+function closeView(){document.getElementById('viewBg').style.display='none';}
+// modal "ดูอย่างเดียว" ปิดจากพื้นหลังได้ (ไม่มีข้อมูลจะหาย)
+document.getElementById('viewBg').addEventListener('click',e=>{if(e.target.id==='viewBg')closeView();});
 
 async function saveRec(){
   const rec={
