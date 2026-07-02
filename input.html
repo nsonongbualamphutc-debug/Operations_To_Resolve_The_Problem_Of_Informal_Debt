@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ระบบกรอกข้อมูลหนี้นอกระบบ จ.หนองบัวลำภู</title>
+<meta name="theme-color" content="#0b1533">
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{--navy:#0b1533;--navy2:#101d45;--navy3:#182a63;--gold:#e8b53a;--gold2:#f6d47c;
+--green:#2ecc8f;--amber:#f5a623;--blue:#4da3ff;--red:#ff6b6b;
+--ink:#eef2ff;--muted:#93a0c4;--card:rgba(255,255,255,.05);--line:rgba(255,255,255,.1)}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Sarabun',sans-serif;background:linear-gradient(160deg,var(--navy),var(--navy2) 60%,#0a132e);color:var(--ink);min-height:100vh}
+h1,h2,h3{font-family:'Kanit'}
+button{font-family:'Kanit';cursor:pointer}
+
+/* login */
+.login{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+.login-card{width:100%;max-width:400px;background:var(--card);border:1px solid var(--line);border-radius:24px;padding:36px;text-align:center;backdrop-filter:blur(10px)}
+.login-card img{height:92px;margin-bottom:14px}
+.login-card h1{font-size:1.15rem;margin-bottom:4px}
+.login-card p{font-size:.82rem;color:var(--muted);margin-bottom:22px}
+.pin-input{width:100%;font-family:'Kanit';font-size:1.5rem;letter-spacing:12px;text-align:center;background:var(--navy3);color:var(--ink);border:1px solid var(--line);border-radius:14px;padding:14px;outline:none;margin-bottom:14px}
+.pin-input:focus{border-color:var(--gold)}
+.btn{width:100%;font-size:.95rem;font-weight:600;color:var(--navy);background:linear-gradient(135deg,var(--gold2),var(--gold));border:none;border-radius:14px;padding:13px;transition:.2s}
+.btn:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(232,181,58,.35)}
+.btn:disabled{opacity:.5;cursor:wait}
+.err{color:var(--red);font-size:.82rem;margin-top:10px;min-height:1.2em}
+.backlink{display:inline-block;margin-top:16px;font-size:.8rem;color:var(--muted);text-decoration:none}
+.backlink:hover{color:var(--gold2)}
+
+/* app */
+.app{display:none}
+.topbar{position:sticky;top:0;z-index:100;background:rgba(11,21,51,.92);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.topbar-in{max-width:1500px;margin:0 auto;padding:10px 20px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.topbar img{height:44px}
+.tt h1{font-size:1.02rem}
+.tt p{font-size:.75rem;color:var(--muted)}
+.role-badge{font-family:'Kanit';font-size:.75rem;padding:5px 14px;border-radius:99px;font-weight:600}
+.role-admin{background:rgba(232,181,58,.18);color:var(--gold2);border:1px solid rgba(232,181,58,.4)}
+.role-district{background:rgba(77,163,255,.15);color:var(--blue);border:1px solid rgba(77,163,255,.4)}
+.top-right{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
+.tbtn{font-size:.78rem;background:var(--navy3);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:8px 14px;transition:.18s}
+.tbtn:hover{border-color:var(--gold);color:var(--gold2)}
+.tbtn.gold{background:linear-gradient(135deg,var(--gold2),var(--gold));color:var(--navy);border:none;font-weight:600}
+.tbtn.green{background:rgba(46,204,143,.15);color:var(--green);border-color:rgba(46,204,143,.4)}
+
+.wrap{max-width:1500px;margin:0 auto;padding:18px 20px 60px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:16px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 16px}
+.stat .v{font-family:'Kanit';font-size:1.3rem;font-weight:700}
+.stat .l{font-size:.74rem;color:var(--muted)}
+.stat.g .v{color:var(--green)}.stat.a .v{color:var(--amber)}.stat.gd .v{color:var(--gold2)}
+
+.toolrow{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+.search{flex:1;min-width:220px;font-family:'Sarabun';font-size:.88rem;background:var(--navy3);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:9px 14px;outline:none}
+select.fsel{font-family:'Kanit';font-size:.82rem;background:var(--navy3);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:9px 12px;outline:none}
+
+.tblwrap{overflow-x:auto;background:var(--card);border:1px solid var(--line);border-radius:16px}
+table{width:100%;border-collapse:collapse;font-size:.83rem;min-width:1100px}
+th{font-family:'Kanit';font-size:.76rem;font-weight:600;color:var(--gold2);padding:11px 10px;border-bottom:1px solid rgba(232,181,58,.3);text-align:left;white-space:nowrap;position:sticky;top:0;background:var(--navy2)}
+td{padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+tr:hover td{background:rgba(255,255,255,.03)}
+.st{display:inline-block;font-size:.72rem;font-weight:600;padding:3px 10px;border-radius:99px;white-space:nowrap}
+.st-done{background:rgba(46,204,143,.15);color:var(--green)}
+.st-med{background:rgba(245,166,35,.15);color:var(--amber)}
+.st-wip{background:rgba(77,163,255,.15);color:var(--blue)}
+.rowbtn{font-size:.72rem;background:transparent;border:1px solid var(--line);color:var(--muted);border-radius:8px;padding:4px 10px;margin:1px}
+.rowbtn:hover{color:var(--gold2);border-color:var(--gold)}
+.rowbtn.del:hover{color:var(--red);border-color:var(--red)}
+.empty{padding:44px;text-align:center;color:var(--muted)}
+
+/* modal */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(5,10,25,.75);backdrop-filter:blur(4px);z-index:500;align-items:flex-start;justify-content:center;padding:30px 16px;overflow-y:auto}
+.modal{width:100%;max-width:760px;background:var(--navy2);border:1px solid var(--line);border-radius:20px;padding:26px}
+.modal h2{font-size:1.05rem;margin-bottom:16px;color:var(--gold2)}
+.fgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.fgrid .full{grid-column:1/-1}
+.fld label{display:block;font-size:.76rem;color:var(--muted);margin-bottom:5px;font-family:'Kanit'}
+.fld input,.fld select,.fld textarea{width:100%;font-family:'Sarabun';font-size:.88rem;background:var(--navy3);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:9px 12px;outline:none}
+.fld input:focus,.fld select:focus,.fld textarea:focus{border-color:var(--gold)}
+.fld textarea{resize:vertical;min-height:60px}
+.modal-btns{display:flex;gap:10px;justify-content:flex-end;margin-top:18px}
+.mbtn{font-size:.88rem;border-radius:12px;padding:10px 22px;border:none;font-weight:600}
+.mbtn.save{background:linear-gradient(135deg,var(--gold2),var(--gold));color:var(--navy)}
+.mbtn.cancel{background:var(--navy3);color:var(--muted);border:1px solid var(--line)}
+.hint{grid-column:1/-1;font-size:.74rem;color:var(--muted);background:rgba(77,163,255,.08);border:1px solid rgba(77,163,255,.2);border-radius:10px;padding:8px 12px}
+
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--navy3);border:1px solid var(--gold);color:var(--ink);font-family:'Kanit';font-size:.85rem;padding:12px 26px;border-radius:99px;z-index:900;opacity:0;transition:.3s;box-shadow:0 10px 30px rgba(0,0,0,.4)}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.spin{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.3);border-top-color:var(--gold);border-radius:50%;animation:sp .7s linear infinite;vertical-align:-2px;margin-right:6px}
+@keyframes sp{to{transform:rotate(360deg)}}
+@media(max-width:640px){.fgrid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div class="login" id="loginView">
+  <div class="login-card">
+    <img src="ตราหนองบัวลำภู.png" alt="">
+    <h1>ระบบกรอกข้อมูลหนี้นอกระบบ</h1>
+    <p>จังหวัดหนองบัวลำภู · สำหรับเจ้าหน้าที่<br>ปกครองจังหวัด / ที่ทำการปกครองอำเภอ</p>
+    <input class="pin-input" id="pin" type="password" inputmode="numeric" maxlength="6" placeholder="••••••" autocomplete="off">
+    <button class="btn" id="loginBtn" onclick="doLogin()">เข้าสู่ระบบ</button>
+    <div class="err" id="loginErr"></div>
+    <a class="backlink" href="index.html">← กลับหน้าแดชบอร์ดสาธารณะ</a>
+  </div>
+</div>
+
+<!-- APP -->
+<div class="app" id="appView">
+  <header class="topbar"><div class="topbar-in">
+    <img src="ตราหนองบัวลำภู.png" alt="">
+    <div class="tt"><h1>ระบบกรอกข้อมูลหนี้นอกระบบ</h1><p>จังหวัดหนองบัวลำภู</p></div>
+    <span class="role-badge" id="roleBadge"></span>
+    <div class="top-right">
+      <button class="tbtn gold" onclick="openForm()">＋ เพิ่มเรื่องใหม่</button>
+      <button class="tbtn green" onclick="document.getElementById('xlsFile').click()">📥 นำเข้า Excel</button>
+      <input type="file" id="xlsFile" accept=".xlsx,.xls" style="display:none" onchange="importXls(this)">
+      <button class="tbtn" onclick="exportXls()">📤 ส่งออก Excel</button>
+      <button class="tbtn" onclick="loadData()">🔄 รีเฟรช</button>
+      <button class="tbtn" onclick="logout()">ออกจากระบบ</button>
+    </div>
+  </div></header>
+
+  <div class="wrap">
+    <div class="stats">
+      <div class="stat gd"><div class="v" id="sTotal">0</div><div class="l">เรื่องทั้งหมด</div></div>
+      <div class="stat"><div class="v" id="sDebt">0</div><div class="l">มูลหนี้รวม (บาท)</div></div>
+      <div class="stat g"><div class="v" id="sDone">0</div><div class="l">ยุติเรื่องแล้ว</div></div>
+      <div class="stat a"><div class="v" id="sPend">0</div><div class="l">คงค้าง</div></div>
+    </div>
+
+    <div class="toolrow">
+      <input class="search" id="q" placeholder="🔍 ค้นหา: รายละเอียด / พฤติการณ์ / หมายเหตุ ..." oninput="renderTable()">
+      <select class="fsel" id="fDist" onchange="renderTable()"><option value="">ทุกอำเภอ</option></select>
+      <select class="fsel" id="fStatus" onchange="renderTable()">
+        <option value="">ทุกสถานะ</option>
+        <option>อยู่ระหว่างดำเนินการ</option><option>อยู่ระหว่างไกล่เกลี่ย</option><option>ยุติเรื่องแล้ว</option>
+      </select>
+      <select class="fsel" id="fYear" onchange="renderTable()"><option value="">ทุกปีงบ</option></select>
+    </div>
+
+    <div class="tblwrap">
+      <table>
+        <thead><tr>
+          <th>วันที่รับเรื่อง</th><th>อำเภอ</th><th>ช่องทาง</th><th>พฤติการณ์</th>
+          <th style="min-width:220px">รายละเอียด</th><th>มูลหนี้ (บาท)</th><th>เจ้าหนี้</th><th>ลูกหนี้</th>
+          <th>สถานะ</th><th>ผลการยุติ</th><th>หนี้หลังไกล่เกลี่ย</th><th>จัดการ</th>
+        </tr></thead>
+        <tbody id="tbody"><tr><td colspan="12" class="empty">กำลังโหลด...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- FORM MODAL -->
+<div class="modal-bg" id="modalBg">
+  <div class="modal">
+    <h2 id="mTitle">เพิ่มเรื่องร้องเรียนใหม่</h2>
+    <div class="fgrid">
+      <div class="fld"><label>วันที่รับเรื่อง *</label><input type="date" id="f_date"></div>
+      <div class="fld"><label>อำเภอ *</label><select id="f_district"></select></div>
+      <div class="fld"><label>ช่องทางการรับเรื่อง</label><select id="f_channel">
+        <option>ศูนย์ดำรงธรรม</option><option>ที่ว่าการอำเภอ</option><option>ตลาดนัดแก้หนี้</option>
+        <option>สายด่วน 1567</option><option>ลงทะเบียนออนไลน์</option><option>สถานีตำรวจ</option><option>อื่นๆ</option>
+      </select></div>
+      <div class="fld"><label>พฤติการณ์ / ประเภทเรื่อง</label><select id="f_behavior">
+        <option>ดอกเบี้ยเกินกฎหมายกำหนด</option><option>ทวงหนี้ผิดกฎหมาย/ข่มขู่</option>
+        <option>แอปเงินกู้ออนไลน์</option><option>นายทุนปล่อยกู้นอกระบบ</option>
+        <option>ยึดโฉนด/ทรัพย์สินค้ำประกัน</option><option>สัญญาไม่เป็นธรรม</option><option>อื่นๆ</option>
+      </select></div>
+      <div class="fld full"><label>รายละเอียดเรื่องร้องเรียน (ข้อมูลภายใน — ไม่แสดงหน้าสาธารณะ)</label>
+        <textarea id="f_detail" placeholder="ระบุพฤติการณ์ พื้นที่ ฯลฯ (หลีกเลี่ยงการระบุชื่อ-สกุลจริงหากไม่จำเป็น)"></textarea></div>
+      <div class="fld"><label>มูลค่าหนี้สิน (บาท) *</label><input type="number" id="f_debt" min="0" step="any"></div>
+      <div class="fld"><label>ยอดหนี้หลังไกล่เกลี่ยสำเร็จ (บาท)</label><input type="number" id="f_after" min="0" step="any"></div>
+      <div class="fld"><label>จำนวนเจ้าหนี้ (ราย)</label><input type="number" id="f_cr" min="0" value="1"></div>
+      <div class="fld"><label>จำนวนลูกหนี้ (ราย)</label><input type="number" id="f_db" min="0" value="1"></div>
+      <div class="fld"><label>สถานะการดำเนินงาน *</label><select id="f_status" onchange="toggleRes()">
+        <option>อยู่ระหว่างดำเนินการ</option><option>อยู่ระหว่างไกล่เกลี่ย</option><option>ยุติเรื่องแล้ว</option>
+      </select></div>
+      <div class="fld"><label>ผลการยุติเรื่อง</label><select id="f_result">
+        <option value="">—</option><option>ไกล่เกลี่ยสำเร็จ</option><option>ประนอมหนี้สำเร็จ</option>
+        <option>ลูกหนี้เข้าสู่ระบบสถาบันการเงิน</option><option>ดำเนินคดีตามกฎหมาย</option><option>ยุติ (อื่นๆ)</option>
+      </select></div>
+      <div class="fld full"><label>รายละเอียดการดำเนินการ / อยู่ระหว่างดำเนินการ</label><textarea id="f_action"></textarea></div>
+      <div class="fld full"><label>รายละเอียดการยุติเรื่อง / ผลการไกล่เกลี่ย</label><textarea id="f_res"></textarea></div>
+      <div class="fld full"><label>หมายเหตุ</label><input id="f_note"></div>
+      <div class="hint">🔒 ฟิลด์ข้อความ (รายละเอียด/หมายเหตุ) จะถูกเก็บเป็นข้อมูลภายในเท่านั้น หน้าแดชบอร์ดสาธารณะแสดงเฉพาะสถิติภาพรวมตามหลัก PDPA</div>
+    </div>
+    <div class="modal-btns">
+      <button class="mbtn cancel" onclick="closeForm()">ยกเลิก</button>
+      <button class="mbtn save" id="saveBtn" onclick="saveRec()">บันทึกข้อมูล</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* =============== CONFIG =============== */
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbxdZ7V0aShABQhCb46GZPUdDn2MT0SzjhJPYHud_i1hSpwWsBbjjJ8NmNr-xW37A6TAMg/exec';
+const DISTRICTS = ['เมืองหนองบัวลำภู','ศรีบุญเรือง','นากลาง','โนนสัง','นาวัง','สุวรรณคูหา'];
+
+let PIN='', ROLE='', MY_DISTRICT='', ROWS=[], editId=null;
+
+function jsonp(params){
+  return new Promise((resolve,reject)=>{
+    const cb='cb_'+Math.random().toString(36).slice(2);
+    window[cb]=d=>{delete window[cb];s.remove();resolve(d)};
+    const s=document.createElement('script');
+    s.src=GAS_URL+'?'+new URLSearchParams({...params,callback:cb}).toString();
+    s.onerror=()=>{delete window[cb];s.remove();reject(new Error('เชื่อมต่อเซิร์ฟเวอร์ไม่สำเร็จ'))};
+    document.body.appendChild(s);
+  });
+}
+const nf=new Intl.NumberFormat('th-TH');
+const fmt=n=>nf.format(Math.round(+n||0));
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2600);}
+
+/* =============== AUTH =============== */
+document.getElementById('pin').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
+async function doLogin(){
+  const pin=document.getElementById('pin').value.trim();
+  const err=document.getElementById('loginErr'), btn=document.getElementById('loginBtn');
+  if(!pin){err.textContent='กรุณากรอกรหัสผ่าน';return;}
+  btn.disabled=true;btn.innerHTML='<span class="spin"></span>กำลังตรวจสอบ...';err.textContent='';
+  try{
+    const r=await jsonp({action:'login',pin});
+    if(!r.ok)throw new Error(r.error||'รหัสผ่านไม่ถูกต้อง');
+    PIN=pin;ROLE=r.role;MY_DISTRICT=r.district||'';
+    document.getElementById('loginView').style.display='none';
+    document.getElementById('appView').style.display='block';
+    const badge=document.getElementById('roleBadge');
+    if(ROLE==='admin'){badge.textContent='👑 ปกครองจังหวัด (Admin)';badge.className='role-badge role-admin';}
+    else{badge.textContent='🏛️ อำเภอ'+MY_DISTRICT;badge.className='role-badge role-district';}
+    setupFilters();await loadData();
+  }catch(e){err.textContent=e.message;}
+  btn.disabled=false;btn.textContent='เข้าสู่ระบบ';
+}
+function logout(){location.reload();}
+
+function setupFilters(){
+  const fd=document.getElementById('fDist'), sd=document.getElementById('f_district');
+  const list=ROLE==='admin'?DISTRICTS:[MY_DISTRICT];
+  fd.innerHTML=(ROLE==='admin'?'<option value="">ทุกอำเภอ</option>':'')+list.map(d=>`<option>${d}</option>`).join('');
+  sd.innerHTML=list.map(d=>`<option>${d}</option>`).join('');
+  if(ROLE!=='admin'){fd.value=MY_DISTRICT;fd.disabled=true;sd.disabled=true;}
+}
+
+/* =============== DATA =============== */
+async function loadData(){
+  document.getElementById('tbody').innerHTML='<tr><td colspan="12" class="empty"><span class="spin"></span>กำลังโหลดข้อมูลล่าสุด...</td></tr>';
+  try{
+    const r=await jsonp({action:'list',pin:PIN});
+    if(!r.ok)throw new Error(r.error);
+    ROWS=r.rows||[];
+    const years=[...new Set(ROWS.map(x=>x.fiscal_year).filter(Boolean))].sort((a,b)=>b-a);
+    document.getElementById('fYear').innerHTML='<option value="">ทุกปีงบ</option>'+years.map(y=>`<option>${y}</option>`).join('');
+    renderTable();
+  }catch(e){
+    document.getElementById('tbody').innerHTML=`<tr><td colspan="12" class="empty">⚠️ ${e.message}</td></tr>`;
+  }
+}
+function filtered(){
+  const q=document.getElementById('q').value.toLowerCase();
+  const fd=document.getElementById('fDist').value;
+  const fs=document.getElementById('fStatus').value;
+  const fyv=document.getElementById('fYear').value;
+  return ROWS.filter(r=>
+    (!fd||r.district===fd)&&(!fs||r.status===fs)&&(!fyv||String(r.fiscal_year)===fyv)&&
+    (!q||[r.detail,r.behavior,r.note,r.action_detail,r.resolution_detail,r.channel].join(' ').toLowerCase().includes(q))
+  ).sort((a,b)=>String(b.received_date).localeCompare(String(a.received_date)));
+}
+function stCls(s){s=String(s||'');return s.includes('ยุติ')?'st-done':s.includes('ไกล่เกลี่ย')?'st-med':'st-wip';}
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+function thDate(d){
+  if(!d)return '-';
+  const m=String(d).match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if(!m)return esc(d);
+  return `${+m[3]}/${+m[2]}/${+m[1]+543}`;
+}
+function renderTable(){
+  const F=filtered();
+  const tb=document.getElementById('tbody');
+  const done=F.filter(r=>String(r.status).includes('ยุติ')).length;
+  document.getElementById('sTotal').textContent=fmt(F.length);
+  document.getElementById('sDebt').textContent=fmt(F.reduce((s,r)=>s+(+r.debt_amount||0),0));
+  document.getElementById('sDone').textContent=fmt(done);
+  document.getElementById('sPend').textContent=fmt(F.length-done);
+  if(!F.length){tb.innerHTML='<tr><td colspan="12" class="empty">ไม่พบข้อมูล — กด "เพิ่มเรื่องใหม่" หรือ "นำเข้า Excel" เพื่อเริ่มต้น</td></tr>';return;}
+  tb.innerHTML=F.map(r=>`<tr>
+    <td>${thDate(r.received_date)}</td><td>${esc(r.district)}</td><td>${esc(r.channel)||'-'}</td>
+    <td>${esc(r.behavior)||'-'}</td><td>${esc(r.detail)||'-'}</td>
+    <td style="text-align:right">${fmt(r.debt_amount)}</td>
+    <td style="text-align:center">${r.creditors||'-'}</td><td style="text-align:center">${r.debtors||'-'}</td>
+    <td><span class="st ${stCls(r.status)}">${esc(r.status)||'-'}</span></td>
+    <td>${esc(r.resolution_result)||'-'}</td>
+    <td style="text-align:right">${+r.debt_after?fmt(r.debt_after):'-'}</td>
+    <td style="white-space:nowrap">
+      <button class="rowbtn" onclick="openForm('${r.id}')">✏️ แก้ไข</button>
+      <button class="rowbtn del" onclick="delRec('${r.id}')">🗑️</button>
+    </td></tr>`).join('');
+}
+
+/* =============== FORM =============== */
+function toggleRes(){/* keep simple */}
+function openForm(id){
+  editId=id||null;
+  document.getElementById('mTitle').textContent=id?'แก้ไขข้อมูลเรื่องร้องเรียน':'เพิ่มเรื่องร้องเรียนใหม่';
+  const r=id?ROWS.find(x=>String(x.id)===String(id)):{};
+  const g=k=>r&&r[k]!=null?r[k]:'';
+  document.getElementById('f_date').value=(String(g('received_date')).match(/^\d{4}-\d{2}-\d{2}/)||[''])[0]||new Date().toISOString().slice(0,10);
+  document.getElementById('f_district').value=g('district')||(ROLE==='admin'?DISTRICTS[0]:MY_DISTRICT);
+  setSel('f_channel',g('channel'));setSel('f_behavior',g('behavior'));
+  document.getElementById('f_detail').value=g('detail');
+  document.getElementById('f_debt').value=g('debt_amount')||'';
+  document.getElementById('f_after').value=g('debt_after')||'';
+  document.getElementById('f_cr').value=g('creditors')||1;
+  document.getElementById('f_db').value=g('debtors')||1;
+  setSel('f_status',g('status')||'อยู่ระหว่างดำเนินการ');
+  setSel('f_result',g('resolution_result'));
+  document.getElementById('f_action').value=g('action_detail');
+  document.getElementById('f_res').value=g('resolution_detail');
+  document.getElementById('f_note').value=g('note');
+  document.getElementById('modalBg').style.display='flex';
+}
+function setSel(id,v){const s=document.getElementById(id);if(v&&[...s.options].some(o=>o.value===v||o.text===v))s.value=v;else s.selectedIndex=0;}
+function closeForm(){document.getElementById('modalBg').style.display='none';}
+document.getElementById('modalBg').addEventListener('click',e=>{if(e.target.id==='modalBg')closeForm();});
+
+async function saveRec(){
+  const rec={
+    id:editId||'',
+    received_date:document.getElementById('f_date').value,
+    district:document.getElementById('f_district').value,
+    channel:document.getElementById('f_channel').value,
+    behavior:document.getElementById('f_behavior').value,
+    detail:document.getElementById('f_detail').value,
+    debt_amount:document.getElementById('f_debt').value,
+    debt_after:document.getElementById('f_after').value,
+    creditors:document.getElementById('f_cr').value,
+    debtors:document.getElementById('f_db').value,
+    status:document.getElementById('f_status').value,
+    resolution_result:document.getElementById('f_result').value,
+    action_detail:document.getElementById('f_action').value,
+    resolution_detail:document.getElementById('f_res').value,
+    note:document.getElementById('f_note').value
+  };
+  if(!rec.received_date||!rec.district){toast('กรุณากรอกวันที่และอำเภอ');return;}
+  const btn=document.getElementById('saveBtn');
+  btn.disabled=true;btn.innerHTML='<span class="spin"></span>กำลังบันทึก...';
+  try{
+    const r=await jsonp({action:'save',pin:PIN,payload:JSON.stringify(rec)});
+    if(!r.ok)throw new Error(r.error);
+    toast('✅ บันทึกข้อมูลเรียบร้อย');closeForm();await loadData();
+  }catch(e){toast('⚠️ '+e.message);}
+  btn.disabled=false;btn.textContent='บันทึกข้อมูล';
+}
+async function delRec(id){
+  if(!confirm('ยืนยันการลบรายการนี้?'))return;
+  try{
+    const r=await jsonp({action:'delete',pin:PIN,id});
+    if(!r.ok)throw new Error(r.error);
+    toast('🗑️ ลบข้อมูลแล้ว');await loadData();
+  }catch(e){toast('⚠️ '+e.message);}
+}
+
+/* =============== EXCEL IMPORT / EXPORT =============== */
+const XL_HEADERS={
+  'วันที่รับเรื่อง':'received_date','อำเภอ':'district','ช่องทางการรับเรื่อง':'channel',
+  'พฤติการณ์/ประเภทเรื่อง':'behavior','รายละเอียดเรื่องร้องเรียน':'detail',
+  'มูลค่าหนี้สิน (บาท)':'debt_amount','จำนวนเจ้าหนี้ (ราย)':'creditors','จำนวนลูกหนี้ (ราย)':'debtors',
+  'สถานะการดำเนินงาน':'status','ผลการยุติเรื่อง':'resolution_result',
+  'รายละเอียดการดำเนินการ':'action_detail','รายละเอียดการยุติเรื่อง':'resolution_detail',
+  'ยอดหนี้หลังไกล่เกลี่ยสำเร็จ (บาท)':'debt_after','หมายเหตุ':'note','id':'id','ID':'id'
+};
+function importXls(inp){
+  const f=inp.files[0];if(!f)return;inp.value='';
+  const reader=new FileReader();
+  reader.onload=async e=>{
+    try{
+      const wb=XLSX.read(new Uint8Array(e.target.result),{type:'array',cellDates:true});
+      const ws=wb.Sheets[wb.SheetNames.includes('ข้อมูลหนี้นอกระบบ')?'ข้อมูลหนี้นอกระบบ':wb.SheetNames[0]];
+      const raw=XLSX.utils.sheet_to_json(ws,{defval:''});
+      const recs=raw.map((row,ri)=>{
+        const r={_row:ri+2}; // +2 = หัวตาราง 1 แถว, index เริ่ม 0
+        Object.keys(row).forEach(k=>{
+          const key=XL_HEADERS[String(k).trim()];
+          if(key){
+            let v=row[k];
+            if(v instanceof Date)v=v.toISOString().slice(0,10);
+            r[key]=v;
+          }
+        });
+        return r;
+      }).filter(r=>r.received_date||r.district||r.debt_amount);
+      if(!recs.length){toast('⚠️ ไม่พบข้อมูลในไฟล์ (ตรวจสอบหัวคอลัมน์ให้ตรงกับแบบฟอร์ม)');return;}
+      if(!confirm(`พบข้อมูล ${recs.length} รายการ — ยืนยันการนำเข้า?\n(แถวที่มี id เดิมจะเป็นการอัปเดตทับ / แถวใหม่จะถูกเพิ่ม)`))return;
+      toast('⏳ กำลังนำเข้าข้อมูล...');
+      // ส่งเป็นชุด ชุดละ 5 รายการ (ข้อจำกัดความยาว URL ของ JSONP)
+      let sent=0;
+      for(let i=0;i<recs.length;i+=5){
+        const chunk=recs.slice(i,i+5);
+        const r=await jsonp({action:'import',pin:PIN,payload:JSON.stringify(chunk)});
+        if(!r.ok)throw new Error(r.error);
+        sent+=r.count;toast(`⏳ นำเข้าแล้ว ${sent}/${recs.length} รายการ...`);
+      }
+      toast(`✅ นำเข้าข้อมูลสำเร็จ ${sent} รายการ`);await loadData();
+    }catch(err){toast('⚠️ '+err.message);}
+  };
+  reader.readAsArrayBuffer(f);
+}
+function exportXls(){
+  const F=filtered();
+  if(!F.length){toast('ไม่มีข้อมูลให้ส่งออก');return;}
+  const inv={};Object.entries(XL_HEADERS).forEach(([th,en])=>{if(!inv[en])inv[en]=th;});
+  const data=F.map(r=>{
+    const o={'id':r.id};
+    ['received_date','district','channel','behavior','detail','debt_amount','creditors','debtors',
+     'status','resolution_result','action_detail','resolution_detail','debt_after','note']
+     .forEach(k=>o[inv[k]]=r[k]);
+    return o;
+  });
+  const ws=XLSX.utils.json_to_sheet(data);
+  ws['!cols']=[{wch:16},{wch:13},{wch:17},{wch:16},{wch:22},{wch:40},{wch:16},{wch:12},{wch:12},{wch:18},{wch:20},{wch:30},{wch:30},{wch:20},{wch:20}];
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'ข้อมูลหนี้นอกระบบ');
+  XLSX.writeFile(wb,`หนี้นอกระบบ_${ROLE==='admin'?'ทั้งจังหวัด':MY_DISTRICT}_${new Date().toISOString().slice(0,10)}.xlsx`);
+  toast('📤 ส่งออกไฟล์แล้ว — แก้ไขในไฟล์นี้แล้วนำเข้ากลับได้เลย (มีคอลัมน์ id สำหรับอัปเดตทับ)');
+}
+</script>
+</body>
+</html>
